@@ -1,7 +1,12 @@
 <?php
+// Bắt đầu session để có thể lưu trạng thái đăng nhập
+session_start();
+
+// Các header cần thiết cho API
+header("Access-Control-Allow-Origin: *"); // Cho phép frontend từ domain khác gọi
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Allow-Origin: *"); // Cho phép truy cập từ mọi nguồn
+header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 include_once '../../config/db_connect.php';
 
@@ -10,41 +15,54 @@ $db = $database->getConnection();
 
 $data = json_decode(file_get_contents("php://input"));
 
-if (empty($data->username) || empty($data->password)) {
-    http_response_code(400);
+// Validate dữ liệu đầu vào
+$username = isset($data->username) ? trim($data->username) : '';
+$password = isset($data->password) ? trim($data->password) : '';
+
+if (empty($username) || empty($password)) {
+    http_response_code(400); // Bad Request
     echo json_encode(["success" => false, "message" => "Thiếu tên đăng nhập hoặc mật khẩu."]);
     exit();
 }
 
-$username = $data->username;
-$password = $data->password;
+try {
+    // Tìm người dùng trong CSDL dựa trên username
+    $query = "SELECT user_id, username, password, role FROM users WHERE username = :username LIMIT 1";
+    $stmt = $db->prepare($query);
+    $stmt->bindParam(':username', $username);
+    $stmt->execute();
 
-$query = "SELECT user_id, username, password, role FROM users WHERE username = :username LIMIT 1";
-$stmt = $db->prepare($query);
-$stmt->bindParam(":username", $username);
-$stmt->execute();
-
-if ($stmt->rowCount() > 0) {
+    // Lấy thông tin người dùng
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    $hashed_password = $user['password'];
 
-    // Xác thực mật khẩu
-    if (password_verify($password, $hashed_password)) {
-        // Không gửi lại password hash
-        unset($user['password']);
+    // BƯỚC QUAN TRỌNG NHẤT: KIỂM TRA NGƯỜI DÙNG VÀ MẬT KHẨU
+    // 1. Kiểm tra xem có tìm thấy người dùng không
+    // 2. Nếu có, so sánh mật khẩu người dùng nhập với mật khẩu đã băm trong CSDL
+    if ($user && password_verify($password, $user['password'])) {
+        // Mật khẩu chính xác, đăng nhập thành công
 
-        http_response_code(200);
+        // Lưu thông tin cần thiết vào session
+        $_SESSION['user_id'] = $user['user_id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['role'] = $user['role'];
+
+        http_response_code(200); // OK
         echo json_encode([
             "success" => true,
             "message" => "Đăng nhập thành công!",
-            "user" => $user
+            "user" => [
+                "username" => $user['username'],
+                "role" => $user['role']
+            ]
         ]);
     } else {
-        http_response_code(401);
-        echo json_encode(["success" => false, "message" => "Sai mật khẩu."]);
+        // Không tìm thấy người dùng hoặc sai mật khẩu
+        http_response_code(401); // Unauthorized
+        echo json_encode(["success" => false, "message" => "Tên đăng nhập hoặc mật khẩu không chính xác."]);
     }
-} else {
-    http_response_code(404);
-    echo json_encode(["success" => false, "message" => "Không tìm thấy tài khoản."]);
+} catch (PDOException $e) {
+    // Xử lý các lỗi CSDL khác
+    http_response_code(500); // Internal Server Error
+    error_log("Login PDO Error: " . $e->getMessage());
+    echo json_encode(["success" => false, "message" => "Lỗi máy chủ, không thể xử lý yêu cầu."]);
 }
-?>
