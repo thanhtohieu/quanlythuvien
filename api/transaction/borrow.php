@@ -1,8 +1,8 @@
 <?php
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Methods: PUT");
 
-include_once '../../config/db_connect.php';
+include_once '../../config/db_connect.php'; // Đảm bảo đường dẫn chính xác
 
 $database = new Database();
 $db = $database->getConnection();
@@ -10,76 +10,66 @@ $db = $database->getConnection();
 $data = json_decode(file_get_contents("php://input"));
 
 // 1. Kiểm tra dữ liệu bắt buộc
-if (empty($data->book_id) || empty($data->reader_id) || empty($data->due_date)) {
+if (empty($data->transaction_id)) {
     http_response_code(400);
-    echo json_encode(array("message" => "Thiếu Book ID, Reader ID hoặc Due Date."));
+    echo json_encode(array("message" => "Thiếu Transaction ID."));
     exit();
 }
 
-$book_id = $data->book_id;
-$reader_id = $data->reader_id;
-$due_date = $data->due_date;
+$transaction_id = $data->transaction_id;
 
 try {
     $db->beginTransaction(); // BẮT ĐẦU GIAO DỊCH
 
-    // 2. Kiểm tra tính hợp lệ của Độc giả và Sách
-    // Đảm bảo sách tồn tại và còn bản sao để mượn
-    $book_check_query = "SELECT available_copies FROM books WHERE book_id = :book_id LIMIT 1 FOR UPDATE"; // Khóa hàng để tránh Race Condition
-    $stmt_book_check = $db->prepare($book_check_query);
-    $stmt_book_check->bindParam(':book_id', $book_id);
-    $stmt_book_check->execute();
-    $book_row = $stmt_book_check->fetch(PDO::FETCH_ASSOC);
+    // 2. Kiểm tra giao dịch có tồn tại và đang ở trạng thái "BORROWED" không
+    $trans_check_query = "SELECT book_id, status FROM transactions WHERE transaction_id = :transaction_id LIMIT 1 FOR UPDATE";
+    $stmt_trans_check = $db->prepare($trans_check_query);
+    $stmt_trans_check->bindParam(':transaction_id', $transaction_id);
+    $stmt_trans_check->execute();
+    $trans_row = $stmt_trans_check->fetch(PDO::FETCH_ASSOC);
 
-    if (!$book_row) {
-        http_response_code(404);
-        echo json_encode(array("message" => "Lỗi: Không tìm thấy sách."));
-        $db->rollBack();
-        exit();
-    }
-    if ($book_row['available_copies'] <= 0) {
-        http_response_code(400);
-        echo json_encode(array("message" => "Lỗi: Sách đã hết bản sao có sẵn để mượn."));
-        $db->rollBack();
-        exit();
+    if (!$trans_row) {
+        throw new Exception("Không tìm thấy giao dịch.");
     }
 
-    // 3. Thực hiện Mượn: INSERT vào bảng transactions
-    $borrow_query = "INSERT INTO transactions 
-                     SET 
-                         book_id = :book_id, 
-                         reader_id = :reader_id, 
-                         borrow_date = CURDATE(), 
-                         due_date = :due_date, 
-                         status = 'BORROWED'";
-    $stmt_borrow = $db->prepare($borrow_query);
-    $stmt_borrow->bindParam(':book_id', $book_id);
-    $stmt_borrow->bindParam(':reader_id', $reader_id);
-    $stmt_borrow->bindParam(':due_date', $due_date);
-
-    if (!$stmt_borrow->execute()) {
-        throw new Exception("Không thể tạo giao dịch mượn.");
+    if ($trans_row['status'] !== 'BORROWED') {
+        throw new Exception("Giao dịch này không ở trạng thái đang mượn (có thể đã được trả hoặc có lỗi).");
     }
 
-    // 4. Giảm Tồn Kho: Cập nhật available_copies
+    $book_id = $trans_row['book_id'];
+
+    // 3. Cập nhật trạng thái giao dịch
+    $update_trans_query = "UPDATE transactions 
+                           SET 
+                               status = 'RETURNED', 
+                               return_date = CURDATE() 
+                           WHERE transaction_id = :transaction_id";
+    $stmt_update_trans = $db->prepare($update_trans_query);
+    $stmt_update_trans->bindParam(':transaction_id', $transaction_id);
+
+    if (!$stmt_update_trans->execute()) {
+        throw new Exception("Không thể cập nhật trạng thái giao dịch.");
+    }
+
+    // 4. Tăng số lượng sách có sẵn
     $update_book_query = "UPDATE books 
-                          SET available_copies = available_copies - 1 
+                          SET available_copies = available_copies + 1 
                           WHERE book_id = :book_id";
-    $stmt_update = $db->prepare($update_book_query);
-    $stmt_update->bindParam(':book_id', $book_id);
+    $stmt_update_book = $db->prepare($update_book_query);
+    $stmt_update_book->bindParam(':book_id', $book_id);
 
-    if (!$stmt_update->execute()) {
-        throw new Exception("Không thể cập nhật số lượng sách tồn kho.");
+    if (!$stmt_update_book->execute()) {
+        throw new Exception("Không thể cập nhật số lượng sách.");
     }
 
     $db->commit(); // KẾT THÚC GIAO DỊCH (Thành công)
 
-    http_response_code(201); // Created
-    echo json_encode(array("message" => "Mượn sách thành công!"));
+    http_response_code(200); // OK
+    echo json_encode(array("message" => "Trả sách thành công!"));
 } catch (Exception $e) {
     if ($db->inTransaction()) {
         $db->rollBack(); // HOÀN LẠI (Thất bại)
     }
     http_response_code(500);
-    echo json_encode(array("message" => "Lỗi giao dịch mượn sách: " . $e->getMessage()));
+    echo json_encode(array("message" => "Lỗi khi trả sách: " . $e->getMessage()));
 }
