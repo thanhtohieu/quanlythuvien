@@ -26,15 +26,14 @@ CREATE TABLE transactions (
     due_date DATE NOT NULL,
     return_date DATE NULL, -- NULL nếu chưa trả
     status ENUM('BORROWED', 'RETURNED', 'OVERDUE') NOT NULL,
-    
     FOREIGN KEY (book_id) REFERENCES books(book_id),
     FOREIGN KEY (reader_id) REFERENCES readers(reader_id)
-    -- Bảng Người dùng để đăng nhập hệ thống
+);  <-- Cần thêm dấu chấm phẩy (;) ở đây
+-- Bảng Người dùng để đăng nhập hệ thống
 CREATE TABLE users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     role ENUM('admin', 'reader') DEFAULT 'reader',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
 );
