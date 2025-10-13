@@ -1,35 +1,32 @@
 // js/register.js
 
-// Chờ cho toàn bộ trang web được tải xong trước khi chạy mã
 document.addEventListener("DOMContentLoaded", () => {
-    // Lấy các phần tử cần thiết từ trang HTML
     const registerForm = document.getElementById("registerForm");
     const errorMsg = document.getElementById("errorMsg");
 
-    // Chỉ thực thi mã nếu tìm thấy form đăng ký
     if (registerForm) {
-        // Gắn một trình xử lý sự kiện vào form khi nó được gửi đi
         registerForm.addEventListener("submit", async (e) => {
-            // Ngăn chặn hành vi mặc định của form (tải lại trang)
+            // Ngăn trang tải lại khi nhấn nút
             e.preventDefault();
 
-            // Lấy giá trị từ các ô input và loại bỏ khoảng trắng thừa
+            // Lấy dữ liệu từ form và xóa khoảng trắng thừa
             const username = document.getElementById("username").value.trim();
             const password = document.getElementById("password").value.trim();
             const confirmPassword = document.getElementById("confirmPassword").value.trim();
 
-            // Xóa mọi thông báo lỗi cũ
+            // Xóa thông báo lỗi cũ
             errorMsg.textContent = "";
+            errorMsg.style.color = 'red'; // Đảm bảo màu chữ là màu đỏ cho lỗi
 
-            // --- BƯỚC 1: KIỂM TRA DỮ LIỆU PHÍA NGƯỜI DÙNG ---
+            // --- BƯỚC 1: KIỂM TRA DỮ LIỆU PHÍA CLIENT ---
             if (!username || !password || !confirmPassword) {
                 errorMsg.textContent = "Vui lòng điền đầy đủ tất cả các trường.";
-                return; // Dừng thực thi hàm
+                return;
             }
 
             if (password.length < 6) {
                 errorMsg.textContent = "Mật khẩu phải có ít nhất 6 ký tự.";
-                return; 
+                return;
             }
 
             if (password !== confirmPassword) {
@@ -37,39 +34,43 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // --- BƯỚC 2: GỬI DỮ LIỆU ĐẾN API ---
+            // --- BƯỚC 2: GỬI YÊU CẦU ĐẾN SERVER ---
             try {
-                // Sử dụng fetch để gửi yêu cầu POST đến API đăng ký
-                const response = await fetch("api/users/register.php", {
+                // ĐỊNH NGHĨA URL ĐẾN API BACKEND. HÃY ĐẢM BẢO ĐƯỜNG DẪN NÀY CHÍNH XÁC!
+                const apiUrl = "http://localhost/quanlythuvien/api/user/register.php";
+
+                const response = await fetch(apiUrl, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json", // Báo cho server biết chúng ta đang gửi dữ liệu dạng JSON
+                        "Content-Type": "application/json",
                     },
-                    // Chuyển đổi đối tượng JavaScript thành chuỗi JSON
                     body: JSON.stringify({
                         username: username,
                         password: password,
-                        role: 'reader' // Mặc định vai trò là 'reader' cho người dùng mới
                     }),
                 });
 
-                // Chuyển đổi phản hồi từ server (dạng JSON) thành đối tượng JavaScript
+                // Lấy dữ liệu JSON từ phản hồi của server
                 const result = await response.json();
 
-                // --- BƯỚC 3: XỬ LÝ KẾT QUẢ TRẢ VỀ ---
-                if (result.success) {
-                    // Nếu đăng ký thành công
-                    alert(result.message); // Hiển thị thông báo "Đăng ký thành công!"
-                    window.location.href = "login.html"; // Chuyển hướng người dùng đến trang đăng nhập
+                // --- BƯỚC 3: XỬ LÝ PHẢN HỒI TỪ SERVER ---
+                // response.ok sẽ là true nếu mã trạng thái HTTP là 2xx (ví dụ: 200 OK, 201 Created)
+                if (response.ok) {
+                    // Đăng ký thành công
+                    alert(result.message); // Hiển thị thông báo thành công (ví dụ: "Đăng ký thành công!")
+                    window.location.href = "login.html"; // Chuyển đến trang đăng nhập
                 } else {
-                    // Nếu có lỗi từ server (ví dụ: tên đăng nhập đã tồn tại)
-                    errorMsg.textContent = result.message || "Đã xảy ra lỗi. Vui lòng thử lại.";
+                    // Nếu server trả về lỗi (ví dụ: 400, 409, 500)
+                    // `result.message` sẽ chứa thông báo lỗi cụ thể từ PHP
+                    // (ví dụ: "Tên đăng nhập đã tồn tại", "Thiếu dữ liệu",...)
+                    errorMsg.textContent = result.message || "Đã xảy ra lỗi không xác định từ server.";
                 }
 
             } catch (error) {
-                // Xử lý lỗi mạng (ví dụ: không kết nối được tới server)
-                errorMsg.textContent = "Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại mạng của bạn!";
-                console.error("Lỗi đăng ký:", error);
+                // Lỗi này chỉ xảy ra khi có sự cố về MẠNG
+                // Ví dụ: server XAMPP bị tắt, sai URL, không có kết nối,...
+                console.error("Fetch Error:", error);
+                errorMsg.textContent = "Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại server và đường dẫn API.";
             }
         });
     }
