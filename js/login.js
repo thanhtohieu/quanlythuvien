@@ -1,5 +1,3 @@
-// js/login.js
-
 document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("loginForm");
   const errorMsg = document.getElementById("errorMsg");
@@ -19,25 +17,19 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       try {
-        // ĐƯỜNG DẪN ĐÚNG LÀ 'user' KHÔNG CÓ 's'
-        const apiUrl = "http://localhost/quanlythuvien/api/user/login.php";
+        // Đảm bảo đường dẫn này chính xác (đã đổi api -> backend)
+        const apiUrl = "/quanlythuvien/backend/user/login.php";
 
         const response = await fetch(apiUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: username,
-            password: password,
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
         });
 
         const result = await response.json();
 
         if (response.ok) {
           alert(result.message);
-          // Chuyển hướng đến trang dashboard sau khi đăng nhập thành công
           window.location.href = "dashboard.html";
         } else {
           errorMsg.textContent = result.message || "Đã xảy ra lỗi. Vui lòng thử lại.";
@@ -45,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       } catch (error) {
         console.error("Login error:", error);
-        errorMsg.textContent = "Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại URL API.";
+        errorMsg.textContent = "Lỗi kết nối hoặc URL API không đúng.";
       }
     });
   }

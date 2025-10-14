@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // --- BƯỚC 2: GỬI YÊU CẦU ĐẾN SERVER ---
             try {
                 // ĐỊNH NGHĨA URL ĐẾN API BACKEND. HÃY ĐẢM BẢO ĐƯỜNG DẪN NÀY CHÍNH XÁC!
-                const apiUrl = "http://localhost/quanlythuvien/api/user/register.php";
+                const apiUrl = "http://localhost/quanlythuvien/backend/user/register.php";
 
                 const response = await fetch(apiUrl, {
                     method: "POST",
