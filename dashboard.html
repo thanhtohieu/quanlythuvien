@@ -1,95 +1,120 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trang chính - Quản lý thư viện</title>
-    <link rel="stylesheet" href="main.css">
     <style>
         body {
             font-family: Arial, sans-serif;
             background: #f8f9fa;
             margin: 0;
             padding: 0;
+
+            .status-borrowed {
+                color: #007bff;
+                font-weight: bold;
+            }
+
+            .status-returned {
+                color: #28a745;
+                font-weight: bold;
+            }
+
+            .status-overdue {
+                color: #dc3545;
+                font-weight: bold;
+            }
         }
+
         header {
             background: #007bff;
             color: white;
             text-align: center;
             padding: 15px;
         }
+
         nav {
             background: #343a40;
             color: white;
             padding: 10px;
             display: flex;
             gap: 15px;
+            align-items: center;
         }
+
         nav a {
             color: white;
             text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
         }
+
+        nav a.active,
+        nav a:hover {
+            background-color: #495057;
+        }
+
         main {
             padding: 20px;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 12px;
             text-align: left;
         }
+
         th {
             background: #007bff;
             color: white;
         }
+
+        #logoutBtn {
+            color: white;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            margin-left: auto;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1em;
+        }
+
+        #logoutBtn:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
+
 <body>
     <header>
         <h1>📚 Hệ thống Quản lý Thư viện</h1>
     </header>
 
     <nav>
-        <a href="#">Trang chủ</a>
-        <a href="#">Quản lý sách</a>
-        <a href="#">Quản lý độc giả</a>
-        <a href="#">Mượn / Trả</a>
-        <a href="login.html" style="margin-left:auto;">Đăng xuất</a>
+        <a href="#" class="nav-link active" data-content="books">Quản lý sách</a>
+        <a href="#" class="nav-link" data-content="readers">Quản lý độc giả</a>
+        <a href="#" class="nav-link" data-content="transactions">Mượn / Trả</a>
+        <a href="#" id="logoutBtn">Đăng xuất</a>
     </nav>
 
-    <main>
-        <h2>Danh sách sách</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Mã sách</th>
-                    <th>Tên sách</th>
-                    <th>Tác giả</th>
-                    <th>Thể loại</th>
-                    <th>Tình trạng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>BK001</td>
-                    <td>Lập trình C++ cơ bản</td>
-                    <td>Nguyễn Văn A</td>
-                    <td>CNTT</td>
-                    <td>Còn</td>
-                </tr>
-                <tr>
-                    <td>BK002</td>
-                    <td>Cấu trúc dữ liệu</td>
-                    <td>Trần Thị B</td>
-                    <td>Khoa học máy tính</td>
-                    <td>Đang mượn</td>
-                </tr>
-            </tbody>
-        </table>
+    <main id="main-content">
     </main>
+
+    <script src="js/dashboard.js"></script>
 </body>
+
 </html>

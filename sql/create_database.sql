@@ -28,7 +28,8 @@ CREATE TABLE transactions (
     status ENUM('BORROWED', 'RETURNED', 'OVERDUE') NOT NULL,
     FOREIGN KEY (book_id) REFERENCES books(book_id),
     FOREIGN KEY (reader_id) REFERENCES readers(reader_id)
-);  <-- Cần thêm dấu chấm phẩy (;) ở đây
+);
+
 -- Bảng Người dùng để đăng nhập hệ thống
 CREATE TABLE users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
