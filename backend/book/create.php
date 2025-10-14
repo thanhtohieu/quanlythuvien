@@ -1,55 +1,35 @@
 <?php
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: POST"); // Chỉ chấp nhận POST
+session_start();
+header('Content-Type: application/json');
+
+// --- KIỂM TRA QUYỀN ADMIN ---
+// if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+//     http_response_code(403);
+//     echo json_encode(["message" => "Truy cập bị từ chối."]);
+//     exit();
+// }
 
 include_once '../../config/db_connect.php';
+include_once '../../models/Book.php';
 
 $database = new Database();
 $db = $database->getConnection();
+$book = new Book($db);
 
-// Lấy dữ liệu từ body của yêu cầu POST (dạng JSON)
 $data = json_decode(file_get_contents("php://input"));
 
-// Kiểm tra dữ liệu bắt buộc
-if (
-    !empty($data->title) &&
-    !empty($data->author) &&
-    isset($data->quantity) && is_numeric($data->quantity) && $data->quantity >= 0
-) {
+// Gán dữ liệu vào đối tượng book
+$book->title = $data->title;
+$book->author = $data->author;
+$book->publisher = $data->publisher;
+$book->publication_year = $data->publication_year;
+$book->quantity = $data->quantity;
 
-    // Câu lệnh SQL: available_copies = quantity
-    $query = "INSERT INTO books 
-              SET 
-                  title=:title, 
-                  author=:author, 
-                  publisher=:publisher, 
-                  publication_year=:year, 
-                  quantity=:quantity,
-                  available_copies=:quantity"; // Khóa quan trọng!
-
-    $stmt = $db->prepare($query);
-
-    // Làm sạch dữ liệu và gán tham số
-    $title = htmlspecialchars(strip_tags($data->title));
-    $author = htmlspecialchars(strip_tags($data->author));
-    $publisher = htmlspecialchars(strip_tags($data->publisher));
-    $year = htmlspecialchars(strip_tags($data->publication_year));
-    $quantity = (int)$data->quantity;
-
-    $stmt->bindParam(":title", $title);
-    $stmt->bindParam(":author", $author);
-    $stmt->bindParam(":publisher", $publisher);
-    $stmt->bindParam(":year", $year);
-    $stmt->bindParam(":quantity", $quantity);
-
-    if ($stmt->execute()) {
-        http_response_code(201); // Created
-        echo json_encode(array("message" => "Sách đã được thêm thành công."));
-    } else {
-        http_response_code(503); // Service Unavailable
-        echo json_encode(array("message" => "Lỗi máy chủ: Không thể thêm sách."));
-    }
+// Tạo sách
+if ($book->create()) {
+    http_response_code(201);
+    echo json_encode(array("message" => "Sách đã được tạo."));
 } else {
-    http_response_code(400); // Bad Request
-    echo json_encode(array("message" => "Thiếu dữ liệu bắt buộc hoặc số lượng không hợp lệ."));
+    http_response_code(503);
+    echo json_encode(array("message" => "Không thể tạo sách."));
 }
