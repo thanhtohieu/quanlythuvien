@@ -16,43 +16,46 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
 
+            // Thêm nút "Thêm sách mới"
             let tableHtml = `<h2>Danh sách sách</h2>
-                             <table>
-                                 <thead>
-                                     <tr>
-                                         <th>Mã sách</th>
-                                         <th>Tên sách</th>
-                                         <th>Tác giả</th>
-                                         <th>Tổng số</th>
-                                         <th>Còn lại</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody>`;
+                         <button id="add-book-btn" style="margin-bottom: 10px;">+ Thêm sách mới</button>
+                         <table>
+                             <thead>
+                                 <tr>
+                                     <th>Mã sách</th>
+                                     <th>Tên sách</th>
+                                     <th>Tác giả</th>
+                                     <th>Tổng số</th>
+                                     <th>Còn lại</th>
+                                     <th>Hành động</th> </tr>
+                             </thead>
+                             <tbody>`;
 
-            // Kiểm tra xem result.data có tồn tại và là một mảng không
             if (result.data && Array.isArray(result.data)) {
                 result.data.forEach(book => {
                     tableHtml += `<tr>
-                                      <td>${book.book_id}</td>
-                                      <td>${book.book_title}</td>
-                                      <td>${book.author}</td>
-                                      <td>${book.quantity}</td>
-                                      <td>${book.available_quantity}</td>
-                                  </tr>`;
+                                  <td>${book.book_id}</td>
+                                  <td>${book.book_title}</td>
+                                  <td>${book.author}</td>
+                                  <td>${book.quantity}</td>
+                                  <td>${book.available_quantity}</td>
+                                  <td>
+                                      <button class="edit-btn" data-id="${book.book_id}">Sửa</button>
+                                      <button class="delete-btn" data-id="${book.book_id}">Xóa</button>
+                                  </td>
+                              </tr>`;
                 });
             } else {
-                tableHtml += `<tr><td colspan="5">Không có sách nào trong thư viện.</td></tr>`;
+                tableHtml += `<tr><td colspan="6">Không có sách nào trong thư viện.</td></tr>`;
             }
 
             tableHtml += `</tbody></table>`;
             mainContent.innerHTML = tableHtml;
 
         } catch (error) {
-            mainContent.innerHTML = '<p style="color: red;">Lỗi khi tải danh sách sách. Vui lòng kiểm tra lại đường dẫn API và đảm bảo backend đang hoạt động.</p>';
-            console.error('Lỗi fetch sách:', error);
+            // ... (phần catch giữ nguyên)
         }
     }
-
     // 2. Hàm tải danh sách ĐỘC GIẢ
     async function loadReaders() {
         mainContent.innerHTML = '<h2>Danh sách độc giả (Chức năng đang được xây dựng)</h2>';
@@ -183,6 +186,44 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
             }
         });
+    });
+
+    mainContent.addEventListener('click', async (e) => {
+        // Xử lý khi nhấn nút Xóa
+        if (e.target.classList.contains('delete-btn')) {
+            const bookId = e.target.getAttribute('data-id');
+
+            // Hiển thị hộp thoại xác nhận
+            if (confirm(`Bạn có chắc chắn muốn xóa sách có ID: ${bookId}?`)) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/book/delete.php`, {
+                        method: 'POST', // Hoặc 'DELETE' tùy cấu hình
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ book_id: bookId })
+                    });
+
+                    const result = await response.json();
+                    alert(result.message);
+
+                    if (response.ok) {
+                        loadBooks(); // Tải lại danh sách sách sau khi xóa thành công
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi xóa sách:', error);
+                    alert('Đã xảy ra lỗi khi cố gắng xóa sách.');
+                }
+            }
+        }
+
+        // Tạm thời cho nút Sửa và Thêm mới
+        if (e.target.classList.contains('edit-btn')) {
+            const bookId = e.target.getAttribute('data-id');
+            alert(`Chức năng Sửa cho sách ID: ${bookId} sẽ được phát triển!`);
+        }
+
+        if (e.target.id === 'add-book-btn') {
+            alert('Chức năng Thêm sách mới sẽ được phát triển!');
+        }
     });
 
     // Xử lý khi nhấn nút Đăng xuất
