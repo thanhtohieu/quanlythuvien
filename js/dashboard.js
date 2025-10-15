@@ -32,6 +32,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const API_BASE_URL = '/quanlythuvien/backend';
 
+    // --- 3. ĐỊNH NGHĨA CÁC HÀM TIỆN ÍCH (HELPER FUNCTIONS) ---
+
+    // Hàm mở modal (dùng chung cho tất cả các modal)
+    function openModal(modal) {
+        if (modal) modal.style.display = 'block';
+    }
+
+    // Hàm đóng modal (dùng chung cho tất cả các modal)
+    function closeModal(modal) {
+        if (modal) modal.style.display = 'none';
+    }
+
     // --- CÁC HÀM TẢI DỮ LIỆU ---
     // (Bao gồm loadBooks, loadReaders, loadTransactions đã hoàn thiện)
     async function loadBooks(searchTerm = '') {
@@ -310,10 +322,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Các nút của bảng Sách
         if (target.id === 'add-book-btn') {
-            modalTitle.textContent = 'Thêm sách mới';
-            bookForm.reset();
+            document.getElementById('modal-title').textContent = 'Thêm sách mới';
+            document.getElementById('book-form').reset();
             document.getElementById('book_id').value = '';
-            openModal();
+            openModal(bookModal); // Sửa lại: Gọi hàm với tham số
         }
         if (target.classList.contains('edit-btn')) {
             const bookId = target.getAttribute('data-id');
@@ -330,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('publication_year').value = bookData.publication_year;
                 document.getElementById('quantity').value = bookData.quantity;
 
-                openModal();
+                openModal(bookModal);
             } catch (error) {
                 console.error('Lỗi khi lấy thông tin sách:', error);
                 alert(error.message);
@@ -486,6 +498,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 300);
         }
     });
+
+    // Chỉ gắn listener cho các form và nút đóng modal của admin
+    if (isAdmin) {
+        document.querySelector('.close-btn').onclick = () => closeModal(bookModal);
+        document.querySelector('.close-btn-reader').onclick = () => closeModal(readerModal);
+        document.querySelector('.close-btn-borrow').onclick = () => closeModal(borrowModal);
+
+        document.getElementById('book-form').addEventListener('submit', async (e) => { /* ... Code xử lý form sách ... */ });
+        document.getElementById('reader-form').addEventListener('submit', async (e) => { /* ... Code xử lý form độc giả ... */ });
+        document.getElementById('borrow-form').addEventListener('submit', async (e) => { /* ... Code xử lý form mượn ... */ });
+    }
+
+    // Đóng modal khi click ra ngoài
+    window.onclick = function (event) {
+        if (event.target == bookModal) closeModal(bookModal);
+        if (event.target == readerModal) closeModal(readerModal);
+        if (event.target == borrowModal) closeModal(borrowModal);
+    };
 
     // --- KHỞI TẠO GIAO DIỆN DỰA TRÊN VAI TRÒ ---
     function initializeUI() {
