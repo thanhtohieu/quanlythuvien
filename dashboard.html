@@ -236,6 +236,32 @@
         </div>
     </div>
 
+    <!-- === FORM MODAL CHO VIỆC MƯỢN SÁCH === -->
+    <div id="borrow-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn-borrow">&times;</span>
+            <h2 id="borrow-modal-title">Tạo phiếu mượn sách</h2>
+            <form id="borrow-form">
+                <div class="form-group">
+                    <label for="book-select">Chọn sách:</label>
+                    <select id="book-select" name="book_id" required>
+                        <option value="">-- Vui lòng chọn sách --</option>
+                        <!-- Tùy chọn sẽ được JS thêm vào -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="reader-select">Chọn độc giả:</label>
+                    <select id="reader-select" name="reader_id" required>
+                        <option value="">-- Vui lòng chọn độc giả --</option>
+                        <!-- Tùy chọn sẽ được JS thêm vào -->
+                    </select>
+                </div>
+                <button type="submit" class="submit-btn">Xác nhận cho mượn</button>
+            </form>
+        </div>
+    </div>
+
+
     <script src="js/dashboard.js"></script>
 </body>
 

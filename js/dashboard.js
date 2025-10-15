@@ -14,7 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const readerForm = document.getElementById('reader-form');
     const readerModalTitle = document.getElementById('reader-modal-title');
 
+    const borrowModal = document.getElementById('borrow-modal');
+    const closeBorrowModalBtn = document.querySelector('.close-btn-borrow');
+    const borrowForm = document.getElementById('borrow-form');
+
     closeReaderModalBtn.onclick = () => readerModal.style.display = 'none';
+    closeBorrowModalBtn.onclick = () => borrowModal.style.display = 'none';
 
 
     const API_BASE_URL = '/quanlythuvien/backend';
@@ -124,7 +129,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
 
-            let tableHtml = `<h2>Lịch sử Mượn/Trả sách</h2><table>...`; // Giữ nguyên phần thead
+            // Thêm nút "+ Cho mượn sách" ngay sau tiêu đề
+            let tableHtml = `<h2>Lịch sử Mượn/Trả sách</h2>
+                         <button id="add-borrow-btn" style="margin-bottom: 10px;">+ Cho mượn sách</button>
+                         <table>
+                             <thead>
+                                 <tr>
+                                     <th>ID</th>
+                                     <th>Tên sách</th>
+                                     <th>Tên độc giả</th>
+                                     <th>Ngày mượn</th>
+                                     <th>Hạn trả</th>
+                                     <th>Ngày trả</th>
+                                     <th>Trạng thái</th>
+                                 </tr>
+                             </thead>
+                             <tbody>`;
 
             if (result.data && result.data.length > 0) {
                 result.data.forEach(item => {
@@ -160,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tableHtml += `</tbody></table>`;
             mainContent.innerHTML = tableHtml;
         } catch (error) {
-            mainContent.innerHTML = `<p style="color: red;">Lỗi khi tải lịch sử giao dịch.</p>`;
+            mainContent.innerHTML = '<p style="color: red;">Lỗi khi tải lịch sử giao dịch.</p>';
             console.error('Lỗi fetch giao dịch:', error);
         }
     }
@@ -233,6 +253,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Xử lý các nút Thêm/Sửa/Xóa trong bảng
     mainContent.addEventListener('click', async (e) => {
         const target = e.target;
+
+        if (target.id === 'add-borrow-btn') {
+            // Mở modal và tải dữ liệu cho dropdowns
+            borrowModal.style.display = 'block';
+
+            // Tải danh sách sách
+            const booksResponse = await fetch(`${API_BASE_URL}/read.php`);
+            const booksResult = await booksResponse.json();
+            const bookSelect = document.getElementById('book-select');
+            bookSelect.innerHTML = '<option value="">-- Vui lòng chọn sách --</option>'; // Xóa các tùy chọn cũ
+            if (booksResult.data) {
+                booksResult.data.forEach(book => {
+                    if (book.available_quantity > 0) { // Chỉ hiển thị sách còn
+                        bookSelect.innerHTML += `<option value="${book.book_id}">${book.book_title}</option>`;
+                    }
+                });
+            }
+
+            // Tải danh sách độc giả
+            const readersResponse = await fetch(`${API_BASE_URL}/reader/read.php`);
+            const readersResult = await readersResponse.json();
+            const readerSelect = document.getElementById('reader-select');
+            readerSelect.innerHTML = '<option value="">-- Vui lòng chọn độc giả --</option>'; // Xóa các tùy chọn cũ
+            if (readersResult.data) {
+                readersResult.data.forEach(reader => {
+                    readerSelect.innerHTML += `<option value="${reader.reader_id}">${reader.name} (${reader.student_id})</option>`;
+                });
+            }
+        }
 
         if (target.classList.contains('edit-reader-btn')) {
             const readerId = target.getAttribute('data-id');
@@ -403,6 +452,33 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Lỗi form độc giả:', error);
         }
     });
+
+    borrowForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const bookId = document.getElementById('book-select').value;
+        const readerId = document.getElementById('reader-select').value;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/transaction/borrow.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ book_id: bookId, reader_id: readerId }),
+                credentials: 'include'
+            });
+
+            const result = await response.json();
+            alert(result.message);
+
+            if (response.ok) {
+                borrowModal.style.display = 'none';
+                loadTransactions(); // Tải lại danh sách giao dịch
+            }
+        } catch (error) {
+            alert('Lỗi khi tạo phiếu mượn.');
+            console.error('Lỗi form mượn sách:', error);
+        }
+    });
+
     // --- KHỞI CHẠY ---
     loadBooks();
 });
