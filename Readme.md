@@ -1,30 +1,50 @@
-Hệ thống Quản lý Thư viện
-Đây là một dự án web quản lý thư viện đơn giản, được xây dựng bằng PHP thuần ở phía backend và HTML, CSS, JavaScript (Vanilla JS) ở phía frontend. Dự án áp dụng mô hình API RESTful để giao tiếp giữa frontend và backend.
+📘 Hệ thống Quản lý Thư viện
+Một dự án web quản lý thư viện đơn giản, được xây dựng bằng PHP thuần ở phía backend và HTML, CSS, JavaScript (Vanilla JS) ở phía frontend. Dự án áp dụng mô hình API RESTful để giao tiếp giữa frontend và backend.
 
 ✨ Các chức năng chính
-Dự án phân chia rõ ràng hai luồng chức năng cho Quản trị viên (Admin/Thủ thư) và người dùng thông thường (Độc giả).
+Dự án phân chia rõ ràng hai luồng chức năng cho Quản trị viên (Admin) và Độc giả (Reader).
 
-👨‍💼 Dành cho Quản trị viên (Admin)
-Quản lý Sách: Thêm, sửa, xóa sách trong thư viện.
+👨‍💼 Chức năng Quản trị viên
+Chức năng
 
-Quản lý Độc giả: Thêm, sửa, xóa thông tin độc giả.
+Mô tả chi tiết
 
-Quản lý Mượn/Trả:
+Quản lý Sách
 
-Tạo phiếu mượn sách mới cho độc giả.
+Thêm, sửa, xóa thông tin sách trong thư viện. Cập nhật số lượng.
 
-Cập nhật trạng thái của một giao dịch (BORROWED, OVERDUE, RETURNED).
+Quản lý Độc giả
 
-Tìm kiếm: Tìm kiếm sách nhanh chóng theo tên hoặc tác giả.
+Thêm, sửa, xóa tài khoản người dùng/độc giả.
 
-📖 Dành cho Độc giả (Reader)
-Xác thực: Đăng ký, đăng nhập, đăng xuất.
+Quản lý Mượn/Trả
 
-Xem & Tìm kiếm sách: Xem danh sách tất cả sách có trong thư viện và tìm kiếm theo tên hoặc tác giả.
+Tạo phiếu mượn mới và cập nhật trạng thái giao dịch (Đang mượn, Quá hạn, Đã trả).
 
-Mượn sách: Gửi yêu cầu mượn một quyển sách còn trong kho.
+Tìm kiếm
 
-Lịch sử cá nhân: Xem lại lịch sử các sách đã và đang mượn.
+Tìm kiếm sách nhanh chóng theo tên hoặc tác giả.
+
+📖 Chức năng Độc giả
+Chức năng
+
+Mô tả chi tiết
+
+Xác thực
+
+Đăng ký, đăng nhập, đăng xuất tài khoản cá nhân.
+
+Xem & Tìm kiếm
+
+Xem danh mục sách và tìm kiếm theo tên hoặc tác giả.
+
+Mượn sách
+
+Gửi yêu cầu mượn một quyển sách còn trong kho.
+
+Lịch sử cá nhân
+
+Xem lại lịch sử các sách đã và đang mượn.
 
 💻 Công nghệ sử dụng
 Backend: PHP 8+ (không sử dụng framework)
@@ -45,20 +65,12 @@ Dự án được tổ chức theo cấu trúc rõ ràng, tách biệt logic:
 │   ├── transaction/
 │   └── user/
 ├── config/             # Chứa file kết nối CSDL
-│   └── db_connect.php
-├── models/             # Chứa các class xử lý logic 
-│   ├── Book.php
-│   ├── Reader.php
-│   └── Transaction.php
+├── models/             # Chứa các class xử lý logic CSDL
 ├── js/                 # Chứa các file JavaScript cho frontend
-│   ├── dashboard.js    # Logic cho trang admin
-│   ├── login.js
-│   └── user_dashboard.js # Logic cho trang độc giả
-│
 ├── create_database.sql # File kịch bản khởi tạo CSDL
 ├── dashboard.html      # Giao diện trang admin
 ├── user_dashboard.html # Giao diện trang độc giả
-└── Readme.md           # File hướng dẫn và giới thiệu dự án
+└── ...
 
 🚀 Hướng dẫn Cài đặt & Chạy dự án
 Để chạy dự án này trên máy cục bộ, bạn cần có XAMPP được cài đặt.
@@ -79,11 +91,11 @@ Truy cập http://localhost/phpmyadmin.
 
 Tạo một cơ sở dữ liệu mới với tên là library.
 
-Chọn CSDL library vừa tạo, vào tab Import (Nhập) và tải lên file create_database.sql có trong dự án.
+Chọn CSDL library, vào tab Import (Nhập) và tải lên file create_database.sql.
 
 3. Cấu hình kết nối:
 
-Mở file config/db_connect.php và đảm bảo các thông tin sau là chính xác (thường là mặc định của XAMPP):
+Mở file config/db_connect.php và đảm bảo các thông tin sau là chính xác:
 
 private $host = "127.0.0.1";
 private $db_name = "library";
