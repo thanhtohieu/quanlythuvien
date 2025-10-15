@@ -35,9 +35,9 @@ Dự án phân chia rõ ràng hai luồng chức năng cho **Quản trị viên 
 
 ## 💻 Công nghệ sử dụng
 
-- **Backend:** PHP 8+ *(không sử dụng framework)*  
-- **Frontend:** HTML5, CSS3, JavaScript *(ES6+, Vanilla JS)*  
-- **Cơ sở dữ liệu:** MySQL / MariaDB  
+- **Backend:** PHP 8+ 
+- **Frontend:** HTML, CSS, JavaScript   
+- **Cơ sở dữ liệu:** MySQL
 - **Web Server:** Apache *(thông qua XAMPP)*
 
 ---
@@ -67,11 +67,6 @@ quanlythuvien/
 ├── login.html # Trang đăng nhập
 └── README.md # File hướng dẫn và giới thiệu dự án
 
-yaml
-Copy code
-
----
-
 ## 🚀 Hướng dẫn Cài đặt & Chạy dự án
 
 Để chạy dự án này trên máy cục bộ, bạn cần có **XAMPP** được cài đặt.
@@ -80,12 +75,9 @@ Copy code
 
 Clone repository này về máy:
 
-```bash
 git clone https://github.com/thanhtohieu/quanlythuvien
 Hoặc tải về và giải nén vào thư mục:
 
-makefile
-Copy code
 C:\xampp\htdocs\quanlythuvien
 2️⃣ Khởi tạo Cơ sở dữ liệu
 Khởi động Apache và MySQL trong XAMPP Control Panel.
@@ -99,8 +91,6 @@ Chọn CSDL library, vào tab Import (Nhập) và tải lên file create_databas
 3️⃣ Cấu hình kết nối
 Mở file config/db_connect.php và đảm bảo các thông tin sau là chính xác:
 
-php
-Copy code
 private $host = "127.0.0.1";
 private $db_name = "library";
 private $username = "root";
