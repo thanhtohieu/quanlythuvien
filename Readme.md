@@ -46,19 +46,26 @@ Dự án phân chia rõ ràng hai luồng chức năng cho **Quản trị viên 
 
 Dự án được tổ chức theo cấu trúc rõ ràng, tách biệt logic:
 
-/quanlythuvien
+quanlythuvien/
 ├── backend/ # Chứa các file API endpoints
 │ ├── book/
 │ ├── reader/
 │ ├── transaction/
 │ └── user/
 ├── config/ # Chứa file kết nối CSDL
+│ └── db_connect.php
 ├── models/ # Chứa các class xử lý logic CSDL
+│ ├── Book.php
+│ ├── Reader.php
+│ └── Transaction.php
 ├── js/ # Chứa các file JavaScript cho frontend
+│ ├── dashboard.js
+│ └── user_dashboard.js
 ├── create_database.sql # File kịch bản khởi tạo CSDL
 ├── dashboard.html # Giao diện trang admin
 ├── user_dashboard.html # Giao diện trang độc giả
-└── ...
+├── login.html # Trang đăng nhập
+└── README.md # File hướng dẫn và giới thiệu dự án
 
 yaml
 Copy code
