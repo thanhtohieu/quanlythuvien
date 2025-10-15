@@ -110,35 +110,35 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
 
-            let tableHtml = `<h2>Lịch sử Mượn/Trả sách</h2>
-                             <table>
-                                 <thead>
-                                     <tr>
-                                         <th>ID</th>
-                                         <th>Tên sách</th>
-                                         <th>Tên độc giả</th>
-                                         <th>Ngày mượn</th>
-                                         <th>Hạn trả</th>
-                                         <th>Ngày trả</th>
-                                         <th>Trạng thái</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody>`;
+            let tableHtml = `<h2>Lịch sử Mượn/Trả sách</h2><table>...`; // Giữ nguyên phần thead
 
             if (result.data && result.data.length > 0) {
                 result.data.forEach(item => {
-                    let statusClass = item.status.toLowerCase();
                     let returnDate = item.return_date ? item.return_date : 'Chưa trả';
 
+                    // Tạo dropdown hoặc hiển thị text tùy vào trạng thái
+                    let statusHtml;
+                    if (item.status === 'RETURNED') {
+                        statusHtml = `<td class="status-returned">${item.status}</td>`;
+                    } else {
+                        statusHtml = `<td>
+                                    <select class="status-select" data-id="${item.transaction_id}">
+                                        <option value="BORROWED" ${item.status === 'BORROWED' ? 'selected' : ''}>BORROWED</option>
+                                        <option value="OVERDUE" ${item.status === 'OVERDUE' ? 'selected' : ''}>OVERDUE</option>
+                                        <option value="RETURNED">RETURNED</option>
+                                    </select>
+                                </td>`;
+                    }
+
                     tableHtml += `<tr>
-                                      <td>${item.transaction_id}</td>
-                                      <td>${item.book_title}</td>
-                                      <td>${item.reader_name}</td>
-                                      <td>${item.borrow_date}</td>
-                                      <td>${item.due_date}</td>
-                                      <td>${returnDate}</td>
-                                      <td class="status-${statusClass}">${item.status}</td>
-                                  </tr>`;
+                                  <td>${item.transaction_id}</td>
+                                  <td>${item.book_title}</td>
+                                  <td>${item.reader_name}</td>
+                                  <td>${item.borrow_date}</td>
+                                  <td>${item.due_date}</td>
+                                  <td>${returnDate}</td>
+                                  ${statusHtml} 
+                              </tr>`;
                 });
             } else {
                 tableHtml += `<tr><td colspan="7">Chưa có giao dịch nào.</td></tr>`;
@@ -235,6 +235,40 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('Lỗi khi xóa sách:', error);
                     alert('Đã xảy ra lỗi khi cố gắng xóa sách.');
                 }
+            }
+        }
+    });
+
+    mainContent.addEventListener('change', async (e) => {
+        // Xử lý khi thay đổi dropdown trạng thái
+        if (e.target.classList.contains('status-select')) {
+            const transactionId = e.target.getAttribute('data-id');
+            const newStatus = e.target.value;
+
+            if (confirm(`Bạn có chắc chắn muốn đổi trạng thái của giao dịch ID ${transactionId} thành ${newStatus}?`)) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/transaction/update.php`, {
+                        method: 'POST', // hoặc PUT
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            transaction_id: transactionId,
+                            new_status: newStatus
+                        })
+                    });
+
+                    const result = await response.json();
+                    alert(result.message);
+
+                    if (response.ok) {
+                        loadTransactions(); // Tải lại danh sách giao dịch
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi cập nhật trạng thái:', error);
+                    alert('Đã xảy ra lỗi.');
+                }
+            } else {
+                // Nếu người dùng không đồng ý, trả dropdown về trạng thái cũ
+                loadTransactions();
             }
         }
     });
