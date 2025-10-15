@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- LẤY THÔNG TIN NGƯỜI DÙNG ---
     const user = JSON.parse(localStorage.getItem('user'));
+    let searchTimeout;
 
     // Nếu không có thông tin người dùng, chuyển về trang đăng nhập
     if (!user) {
@@ -18,23 +19,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- CÁC HÀM TẢI DỮ LIỆU ---
 
     // 1. Tải danh sách SÁCH (phiên bản cho độc giả)
-    async function loadBooks() {
+    async function loadBooks(searchTerm = '') {
         try {
-            const response = await fetch(`${API_BASE_URL}/read.php`);
+            // Nếu có từ khóa thì gọi API tìm kiếm, không thì gọi API lấy toàn bộ
+            const url = searchTerm
+                ? `${API_BASE_URL}/book/search.php?q=${encodeURIComponent(searchTerm)}`
+                : `${API_BASE_URL}/read.php`;
+
+            const response = await fetch(url);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
 
             let tableHtml = `<h2>Danh sách sách</h2>
-                             <table>
-                                 <thead>
-                                     <tr>
-                                         <th>Tên sách</th>
-                                         <th>Tác giả</th>
-                                         <th>Còn lại</th>
-                                         <th>Hành động</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody>`;
+                         <div style="margin-bottom: 15px;">
+                            <input type="search" id="book-search-input" placeholder="Tìm theo tên sách, tác giả..." value="${searchTerm}" style="padding: 8px; width: 300px; border-radius: 4px; border: 1px solid #ccc;">
+                         </div>
+                         <table>
+                             <thead>
+                                 <tr>
+                                     <th>Tên sách</th>
+                                     <th>Tác giả</th>
+                                     <th>Còn lại</th>
+                                     <th>Hành động</th>
+                                 </tr>
+                             </thead>
+                             <tbody>`;
 
             if (result.data && result.data.length > 0) {
                 result.data.forEach(book => {
@@ -43,11 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         : `<span style="color: #6c757d;">Hết sách</span>`;
 
                     tableHtml += `<tr>
-                                      <td>${book.book_title}</td>
-                                      <td>${book.author}</td>
-                                      <td>${book.available_quantity}</td>
-                                      <td>${borrowButton}</td>
-                                  </tr>`;
+                                  <td>${book.book_title}</td>
+                                  <td>${book.author}</td>
+                                  <td>${book.available_quantity}</td>
+                                  <td>${borrowButton}</td>
+                              </tr>`;
                 });
             } else {
                 tableHtml += `<tr><td colspan="4">Không có sách nào trong thư viện.</td></tr>`;
@@ -155,6 +164,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('Đã xảy ra lỗi khi mượn sách.');
                 }
             }
+        }
+    });
+
+    mainContent.addEventListener('input', (e) => {
+        if (e.target.id === 'book-search-input') {
+            clearTimeout(searchTimeout);
+            const searchTerm = e.target.value;
+            searchTimeout = setTimeout(() => {
+                loadBooks(searchTerm);
+            }, 300);
         }
     });
 

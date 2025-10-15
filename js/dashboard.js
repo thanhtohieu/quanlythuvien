@@ -28,47 +28,74 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBorrowModalBtn = document.querySelector('.close-btn-borrow');
     const borrowForm = document.getElementById('borrow-form');
 
+    let searchTimeout;
+
     const API_BASE_URL = '/quanlythuvien/backend';
 
     // --- CÁC HÀM TẢI DỮ LIỆU ---
     // (Bao gồm loadBooks, loadReaders, loadTransactions đã hoàn thiện)
-    async function loadBooks() {
+    async function loadBooks(searchTerm = '') {
         try {
-            const response = await fetch(`${API_BASE_URL}/read.php`);
+            // URL sẽ thay đổi tùy thuộc vào việc có từ khóa tìm kiếm hay không
+            const url = searchTerm
+                ? `${API_BASE_URL}/book/search.php?q=${encodeURIComponent(searchTerm)}`
+                : `${API_BASE_URL}/read.php`;
+
+            const response = await fetch(url, { credentials: 'include' });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
 
-            let tableHtml = `<h2>Danh sách sách</h2>
-                             <button id="add-book-btn" style="margin-bottom: 10px;">+ Thêm sách mới</button>
-                             <table>
-                                 <thead>
-                                     <tr>
-                                         <th>Mã sách</th>
-                                         <th>Tên sách</th>
-                                         <th>Tác giả</th>
-                                         <th>Tổng số</th>
-                                         <th>Còn lại</th>
-                                         <th>Hành động</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody>`;
+            let tableHtml = `<h2>Danh sách sách</h2>`;
+
+            // Thêm ô tìm kiếm vào HTML
+            tableHtml += `<div style="margin-bottom: 15px;">
+                            <input type="search" id="book-search-input" placeholder="Tìm theo tên sách, tác giả..." value="${searchTerm}" style="padding: 8px; width: 300px; border-radius: 4px; border: 1px solid #ccc;">
+                          </div>`;
+
+            if (isAdmin) {
+                tableHtml += `<button id="add-book-btn" style="margin-bottom: 10px;">+ Thêm sách mới</button>`;
+            }
+
+            tableHtml += `<table>
+                                <thead>
+                                    <tr>
+                                        <th>Mã sách</th>
+                                        <th>Tên sách</th>
+                                        <th>Tác giả</th>
+                                        <th>Tổng số</th>
+                                        <th>Còn lại</th>
+                                        ${isAdmin ? '<th>Hành động</th>' : '<th>Mượn</th>'}
+                                    </tr>
+                                </thead>
+                                <tbody>`;
 
             if (result.data && result.data.length > 0) {
                 result.data.forEach(book => {
+                    let actionCell = '';
+                    if (isAdmin) {
+                        actionCell = `<td>
+                                        <button class="edit-btn" data-id="${book.book_id}">Sửa</button>
+                                        <button class="delete-btn" data-id="${book.book_id}">Xóa</button>
+                                      </td>`;
+                    } else {
+                        actionCell = `<td>
+                                        <button class="borrow-btn" data-id="${book.book_id}" ${book.available_quantity > 0 ? '' : 'disabled'}>
+                                            ${book.available_quantity > 0 ? 'Mượn' : 'Hết sách'}
+                                        </button>
+                                      </td>`;
+                    }
+
                     tableHtml += `<tr>
                                       <td>${book.book_id}</td>
                                       <td>${book.book_title}</td>
                                       <td>${book.author}</td>
                                       <td>${book.quantity}</td>
                                       <td>${book.available_quantity}</td>
-                                      <td>
-                                          <button class="edit-btn" data-id="${book.book_id}">Sửa</button>
-                                          <button class="delete-btn" data-id="${book.book_id}">Xóa</button>
-                                      </td>
+                                      ${actionCell}
                                   </tr>`;
                 });
             } else {
-                tableHtml += `<tr><td colspan="6">Không có sách nào trong thư viện.</td></tr>`;
+                tableHtml += `<tr><td colspan="${isAdmin ? 6 : 6}">Không tìm thấy sách nào.</td></tr>`;
             }
             tableHtml += `</tbody></table>`;
             mainContent.innerHTML = tableHtml;
@@ -78,37 +105,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     async function loadReaders() {
+        if (!isAdmin) return;
         try {
-            const response = await fetch(`${API_BASE_URL}/reader/read.php`);
+            const response = await fetch(`${API_BASE_URL}/reader/read.php`, { credentials: 'include' });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
 
-            let tableHtml = `<h2>Danh sách độc giả</h2>
-                         <button id="add-reader-btn" style="margin-bottom: 10px;">+ Thêm độc giả mới</button>
-                         <table>
-                             <thead>
-                                 <tr>
-                                     <th>Mã độc giả</th>
-                                     <th>Họ và tên</th>
-                                     <th>Mã số sinh viên</th>
-                                     <th>Thông tin liên hệ</th>
-                                     <th>Hành động</th>
-                                 </tr>
-                             </thead>
-                             <tbody>`;
-
+            let tableHtml = `<h2>Danh sách độc giả</h2><button id="add-reader-btn" style="margin-bottom: 10px;">+ Thêm độc giả mới</button><table><thead><tr><th>Mã độc giả</th><th>Họ và tên</th><th>Mã số sinh viên</th><th>Thông tin liên hệ</th><th>Hành động</th></tr></thead><tbody>`;
             if (result.data && result.data.length > 0) {
                 result.data.forEach(reader => {
-                    tableHtml += `<tr>
-                                  <td>${reader.reader_id}</td>
-                                  <td>${reader.name}</td>
-                                  <td>${reader.student_id}</td>
-                                  <td>${reader.contact_info}</td>
-                                  <td>
-                                      <button class="edit-reader-btn" data-id="${reader.reader_id}">Sửa</button>
-                                      <button class="delete-reader-btn" data-id="${reader.reader_id}">Xóa</button>
-                                  </td>
-                              </tr>`;
+                    tableHtml += `<tr><td>${reader.reader_id}</td><td>${reader.name}</td><td>${reader.student_id}</td><td>${reader.contact_info}</td><td><button class="edit-reader-btn" data-id="${reader.reader_id}">Sửa</button><button class="delete-reader-btn" data-id="${reader.reader_id}">Xóa</button></td></tr>`;
                 });
             } else {
                 tableHtml += `<tr><td colspan="5">Chưa có độc giả nào.</td></tr>`;
@@ -122,55 +128,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadTransactions() {
+        if (!isAdmin) return;
         try {
-            const response = await fetch(`${API_BASE_URL}/transaction/read.php`);
+            const response = await fetch(`${API_BASE_URL}/transaction/read.php`, { credentials: 'include' });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
 
-            // Thêm nút "+ Cho mượn sách" ngay sau tiêu đề
-            let tableHtml = `<h2>Lịch sử Mượn/Trả sách</h2>
-                         <button id="add-borrow-btn" style="margin-bottom: 10px;">+ Cho mượn sách</button>
-                         <table>
-                             <thead>
-                                 <tr>
-                                     <th>ID</th>
-                                     <th>Tên sách</th>
-                                     <th>Tên độc giả</th>
-                                     <th>Ngày mượn</th>
-                                     <th>Hạn trả</th>
-                                     <th>Ngày trả</th>
-                                     <th>Trạng thái</th>
-                                 </tr>
-                             </thead>
-                             <tbody>`;
+            let tableHtml = `<h2>Lịch sử Mượn/Trả sách</h2>`;
+            if (isAdmin) {
+                tableHtml += `<button id="add-borrow-btn" style="margin-bottom: 10px;">+ Cho mượn sách</button>`;
+            }
+            tableHtml += `<table><thead><tr><th>ID</th><th>Tên sách</th><th>Tên độc giả</th><th>Ngày mượn</th><th>Hạn trả</th><th>Ngày trả</th><th>Trạng thái</th></tr></thead><tbody>`;
 
             if (result.data && result.data.length > 0) {
                 result.data.forEach(item => {
                     let returnDate = item.return_date ? item.return_date : 'Chưa trả';
-
-                    // Tạo dropdown hoặc hiển thị text tùy vào trạng thái
                     let statusHtml;
-                    if (item.status === 'RETURNED') {
-                        statusHtml = `<td class="status-returned">${item.status}</td>`;
+                    if (isAdmin && item.status !== 'RETURNED') {
+                        statusHtml = `<td><select class="status-select" data-id="${item.transaction_id}"><option value="BORROWED" ${item.status === 'BORROWED' ? 'selected' : ''}>BORROWED</option><option value="OVERDUE" ${item.status === 'OVERDUE' ? 'selected' : ''}>OVERDUE</option><option value="RETURNED">RETURNED</option></select></td>`;
                     } else {
-                        statusHtml = `<td>
-                                    <select class="status-select" data-id="${item.transaction_id}">
-                                        <option value="BORROWED" ${item.status === 'BORROWED' ? 'selected' : ''}>BORROWED</option>
-                                        <option value="OVERDUE" ${item.status === 'OVERDUE' ? 'selected' : ''}>OVERDUE</option>
-                                        <option value="RETURNED">RETURNED</option>
-                                    </select>
-                                </td>`;
+                        let statusClass = item.status.toLowerCase();
+                        statusHtml = `<td class="status-${statusClass}">${item.status}</td>`;
                     }
-
-                    tableHtml += `<tr>
-                                  <td>${item.transaction_id}</td>
-                                  <td>${item.book_title}</td>
-                                  <td>${item.reader_name}</td>
-                                  <td>${item.borrow_date}</td>
-                                  <td>${item.due_date}</td>
-                                  <td>${returnDate}</td>
-                                  ${statusHtml} 
-                              </tr>`;
+                    tableHtml += `<tr><td>${item.transaction_id}</td><td>${item.book_title}</td><td>${item.reader_name}</td><td>${item.borrow_date}</td><td>${item.due_date}</td><td>${returnDate}</td>${statusHtml}</tr>`;
                 });
             } else {
                 tableHtml += `<tr><td colspan="7">Chưa có giao dịch nào.</td></tr>`;
@@ -306,8 +286,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Bộ lắng nghe sự kiện chính cho mainContent (click và change)
     mainContent.addEventListener('click', async (e) => {
-        if (!isAdmin) return; // Chỉ admin mới có thể click
         const target = e.target;
+        if (!isAdmin && target.classList.contains('borrow-btn')) {
+            const bookId = e.target.getAttribute('data-id');
+            if (confirm('Bạn có chắc chắn muốn mượn cuốn sách này?')) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/transaction/borrow.php`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ book_id: bookId }),
+                        credentials: 'include'
+                    });
+                    const result = await response.json();
+                    alert(result.message);
+                    if (response.ok) {
+                        loadBooks(); // Tải lại danh sách sách để cập nhật số lượng
+                    }
+                } catch (error) {
+                    alert('Lỗi khi mượn sách.');
+                }
+            }
+        }
 
         // Các nút của bảng Sách
         if (target.id === 'add-book-btn') {
@@ -337,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(error.message);
             }
         }
+
         if (target.classList.contains('delete-btn')) {
             const bookId = target.getAttribute('data-id');
             if (confirm(`Bạn có chắc chắn muốn xóa sách có ID: ${bookId}?`)) {
@@ -476,12 +476,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    mainContent.addEventListener('input', (e) => {
+        if (e.target.id === 'book-search-input') {
+            clearTimeout(searchTimeout); // Xóa timeout cũ để tránh gọi API liên tục
+            const searchTerm = e.target.value;
+            // Chỉ gọi API sau khi người dùng ngừng gõ 300ms
+            searchTimeout = setTimeout(() => {
+                loadBooks(searchTerm);
+            }, 300);
+        }
+    });
+
     // --- KHỞI TẠO GIAO DIỆN DỰA TRÊN VAI TRÒ ---
     function initializeUI() {
         if (!isAdmin) {
+            // Ẩn các tab của admin
             document.querySelector('a[data-content="readers"]').style.display = 'none';
+            document.querySelector('a[data-content="transactions"]').style.display = 'none';
+            // Đổi tên tab cho người dùng
+            document.querySelector('a[data-content="books"]').textContent = 'Tìm & Mượn sách';
         }
-        loadBooks();
+        loadBooks(); // Tải nội dung mặc định
     }
 
     initializeUI();

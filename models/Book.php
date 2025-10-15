@@ -25,6 +25,26 @@ class Book
         $this->conn = $db;
     }
 
+    public function search($keywords)
+    {
+        // Câu truy vấn tìm kiếm trong các cột title và author, không phân biệt hoa thường
+        $query = 'SELECT * FROM ' . $this->table . '
+                  WHERE
+                      LOWER(title) LIKE LOWER(?) OR LOWER(author) LIKE LOWER(?)
+                  ORDER BY
+                      title ASC';
+
+        $stmt = $this->conn->prepare($query);
+
+        // Bind data, thêm dấu % để tìm kiếm gần đúng
+        $search_term = "%{$keywords}%";
+        $stmt->bindParam(1, $search_term);
+        $stmt->bindParam(2, $search_term);
+
+        $stmt->execute();
+        return $stmt;
+    }
+
     public function read_single()
     {
         $query = 'SELECT * FROM ' . $this->table . ' WHERE book_id = :book_id LIMIT 1';
