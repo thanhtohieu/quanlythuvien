@@ -9,6 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const bookForm = document.getElementById('book-form');
     const modalTitle = document.getElementById('modal-title');
 
+    const readerModal = document.getElementById('reader-modal');
+    const closeReaderModalBtn = document.querySelector('.close-btn-reader');
+    const readerForm = document.getElementById('reader-form');
+    const readerModalTitle = document.getElementById('reader-modal-title');
+
+    closeReaderModalBtn.onclick = () => readerModal.style.display = 'none';
+
+
     const API_BASE_URL = '/quanlythuvien/backend';
 
     // --- CÁC HÀM MỞ/ĐÓNG MODAL ---
@@ -72,28 +80,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             let tableHtml = `<h2>Danh sách độc giả</h2>
-                             <table>
-                                 <thead>
-                                     <tr>
-                                         <th>Mã độc giả</th>
-                                         <th>Họ và tên</th>
-                                         <th>Mã số sinh viên</th>
-                                         <th>Thông tin liên hệ</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody>`;
+                         <button id="add-reader-btn" style="margin-bottom: 10px;">+ Thêm độc giả mới</button>
+                         <table>
+                             <thead>
+                                 <tr>
+                                     <th>Mã độc giả</th>
+                                     <th>Họ và tên</th>
+                                     <th>Mã số sinh viên</th>
+                                     <th>Thông tin liên hệ</th>
+                                     <th>Hành động</th>
+                                 </tr>
+                             </thead>
+                             <tbody>`;
 
             if (result.data && result.data.length > 0) {
                 result.data.forEach(reader => {
                     tableHtml += `<tr>
-                                      <td>${reader.reader_id}</td>
-                                      <td>${reader.name}</td>
-                                      <td>${reader.student_id}</td>
-                                      <td>${reader.contact_info}</td>
-                                  </tr>`;
+                                  <td>${reader.reader_id}</td>
+                                  <td>${reader.name}</td>
+                                  <td>${reader.student_id}</td>
+                                  <td>${reader.contact_info}</td>
+                                  <td>
+                                      <button class="edit-reader-btn" data-id="${reader.reader_id}">Sửa</button>
+                                      <button class="delete-reader-btn" data-id="${reader.reader_id}">Xóa</button>
+                                  </td>
+                              </tr>`;
                 });
             } else {
-                tableHtml += `<tr><td colspan="4">Chưa có độc giả nào trong hệ thống.</td></tr>`;
+                tableHtml += `<tr><td colspan="5">Chưa có độc giả nào.</td></tr>`;
             }
             tableHtml += `</tbody></table>`;
             mainContent.innerHTML = tableHtml;
@@ -220,6 +234,30 @@ document.addEventListener('DOMContentLoaded', () => {
     mainContent.addEventListener('click', async (e) => {
         const target = e.target;
 
+        if (target.id === 'add-reader-btn') {
+            readerModalTitle.textContent = 'Thêm độc giả mới';
+            readerForm.reset();
+            document.getElementById('reader_id').value = '';
+            readerModal.style.display = 'block';
+        }
+
+        if (target.classList.contains('delete-reader-btn')) {
+            const readerId = target.getAttribute('data-id');
+            if (confirm(`Bạn có chắc muốn xóa độc giả có ID: ${readerId}?`)) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/reader/delete.php`, {
+                        method: 'POST',
+                        body: JSON.stringify({ reader_id: readerId })
+                    });
+                    const result = await response.json();
+                    alert(result.message);
+                    if (response.ok) loadReaders();
+                } catch (error) {
+                    alert('Lỗi khi xóa độc giả.');
+                }
+            }
+        }
+
         // Nhấn nút THÊM
         if (target.id === 'add-book-btn') {
             modalTitle.textContent = 'Thêm sách mới';
@@ -304,8 +342,31 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Đã có lỗi xảy ra.');
         }
     });
-    // ===================================
+    // Thêm vào cuối file js/dashboard.js
+    readerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const readerId = document.getElementById('reader_id').value;
+        const formData = new FormData(readerForm);
+        const readerData = Object.fromEntries(formData.entries());
 
+        // Tạm thời chỉ làm chức năng Thêm
+        const url = `${API_BASE_URL}/reader/create.php`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: JSON.stringify(readerData)
+            });
+            const result = await response.json();
+            alert(result.message);
+            if (response.ok) {
+                readerModal.style.display = 'none';
+                loadReaders();
+            }
+        } catch (error) {
+            alert('Lỗi khi lưu thông tin độc giả.');
+        }
+    });
     // --- KHỞI CHẠY ---
     loadBooks();
 });

@@ -211,6 +211,31 @@
         </div>
     </div>
 
+    <div id="reader-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn-reader">&times;</span>
+            <h2 id="reader-modal-title">Thêm độc giả mới</h2>
+            <form id="reader-form">
+                <input type="hidden" id="reader_id" name="reader_id">
+
+                <div class="form-group">
+                    <label for="name">Họ và tên:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="student_id">Mã số sinh viên:</label>
+                    <input type="text" id="student_id" name="student_id">
+                </div>
+                <div class="form-group">
+                    <label for="contact_info">Thông tin liên hệ:</label>
+                    <input type="text" id="contact_info" name="contact_info">
+                </div>
+
+                <button type="submit" class="submit-btn">Lưu lại</button>
+            </form>
+        </div>
+    </div>
+
     <script src="js/dashboard.js"></script>
 </body>
 
