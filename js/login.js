@@ -30,7 +30,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (response.ok) {
           alert(result.message);
-          window.location.href = "dashboard.html";
+
+          // --- THAY ĐỔI Ở ĐÂY ---
+          // Kiểm tra vai trò của người dùng trả về từ API
+          if (result.user && result.user.role === 'admin') {
+            // Nếu là admin, chuyển đến trang dashboard đầy đủ chức năng
+            window.location.href = "dashboard.html";
+          } else {
+            // Nếu là độc giả, chuyển đến trang dashboard của người dùng
+            window.location.href = "user_dashboard.html";
+          }
         } else {
           errorMsg.textContent = result.message || "Đã xảy ra lỗi. Vui lòng thử lại.";
         }

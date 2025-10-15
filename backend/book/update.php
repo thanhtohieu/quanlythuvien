@@ -4,6 +4,11 @@ session_start();
 header('Content-Type: application/json');
 
 // --- KIỂM TRA QUYỀN ADMIN ---
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    http_response_code(403); // 403 Forbidden
+    echo json_encode(["message" => "Truy cập bị từ chối. Bạn không có quyền thực hiện chức năng này."]);
+    exit(); // Dừng thực thi ngay lập tức
+}
 
 include_once '../../config/db_connect.php';
 include_once '../../models/Book.php';
