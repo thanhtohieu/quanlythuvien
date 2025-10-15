@@ -151,6 +151,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    mainContent.addEventListener('change', async (e) => {
+        // Xử lý khi thay đổi dropdown trạng thái
+        if (e.target.classList.contains('status-select')) {
+            const transactionId = e.target.getAttribute('data-id');
+            const newStatus = e.target.value;
+
+            if (confirm(`Bạn có chắc chắn muốn đổi trạng thái của giao dịch ID ${transactionId} thành ${newStatus}?`)) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/transaction/update.php`, {
+                        method: 'POST', // hoặc PUT
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            transaction_id: transactionId,
+                            new_status: newStatus
+                        })
+                    });
+
+                    const result = await response.json();
+                    alert(result.message);
+
+                    if (response.ok) {
+                        loadTransactions(); // Tải lại danh sách giao dịch
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi cập nhật trạng thái:', error);
+                    alert('Đã xảy ra lỗi.');
+                }
+            } else {
+                // Nếu người dùng không đồng ý, trả dropdown về trạng thái cũ
+                loadTransactions();
+            }
+        }
+    });
+
+
     // --- CÁC BỘ LẮNG NGHE SỰ KIỆN (EVENT LISTENERS) ---
 
     closeModalBtn.onclick = closeModal;
@@ -235,40 +270,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('Lỗi khi xóa sách:', error);
                     alert('Đã xảy ra lỗi khi cố gắng xóa sách.');
                 }
-            }
-        }
-    });
-
-    mainContent.addEventListener('change', async (e) => {
-        // Xử lý khi thay đổi dropdown trạng thái
-        if (e.target.classList.contains('status-select')) {
-            const transactionId = e.target.getAttribute('data-id');
-            const newStatus = e.target.value;
-
-            if (confirm(`Bạn có chắc chắn muốn đổi trạng thái của giao dịch ID ${transactionId} thành ${newStatus}?`)) {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/transaction/update.php`, {
-                        method: 'POST', // hoặc PUT
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            transaction_id: transactionId,
-                            new_status: newStatus
-                        })
-                    });
-
-                    const result = await response.json();
-                    alert(result.message);
-
-                    if (response.ok) {
-                        loadTransactions(); // Tải lại danh sách giao dịch
-                    }
-                } catch (error) {
-                    console.error('Lỗi khi cập nhật trạng thái:', error);
-                    alert('Đã xảy ra lỗi.');
-                }
-            } else {
-                // Nếu người dùng không đồng ý, trả dropdown về trạng thái cũ
-                loadTransactions();
             }
         }
     });
