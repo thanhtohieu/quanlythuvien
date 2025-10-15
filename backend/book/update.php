@@ -1,5 +1,4 @@
 <?php
-// backend/book/update.php
 session_start();
 header('Content-Type: application/json');
 

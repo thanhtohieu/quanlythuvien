@@ -70,5 +70,56 @@ class Reader
         return false;
     }
 
+    // Hàm đọc thông tin một độc giả
+    public function read_single()
+    {
+        $query = 'SELECT * FROM ' . $this->table . ' WHERE reader_id = :reader_id LIMIT 1';
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':reader_id', $this->reader_id);
+        $stmt->execute();
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($row) {
+            // Gán các thuộc tính
+            $this->name = $row['name'];
+            $this->student_id = $row['student_id'];
+            $this->contact_info = $row['contact_info'];
+            return true;
+        }
+        return false;
+    }
+
+    public function update()
+    {
+        $query = 'UPDATE ' . $this->table . '
+        SET
+            name = :name,
+            student_id = :student_id,
+            contact_info = :contact_info
+        WHERE
+            reader_id = :reader_id';
+
+        $stmt = $this->conn->prepare($query);
+
+        // Làm sạch dữ liệu
+        $this->name = htmlspecialchars(strip_tags($this->name));
+        $this->student_id = htmlspecialchars(strip_tags($this->student_id));
+        $this->contact_info = htmlspecialchars(strip_tags($this->contact_info));
+        $this->reader_id = htmlspecialchars(strip_tags($this->reader_id));
+
+        // Bind data
+        $stmt->bindParam(':name', $this->name);
+        $stmt->bindParam(':student_id', $this->student_id);
+        $stmt->bindParam(':contact_info', $this->contact_info);
+        $stmt->bindParam(':reader_id', $this->reader_id);
+
+        if ($stmt->execute()) {
+            return true;
+        }
+        return false;
+    }
+
     // Các hàm khác như create(), update(), delete() bạn có thể tự phát triển sau...
 }

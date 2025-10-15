@@ -234,6 +234,32 @@ document.addEventListener('DOMContentLoaded', () => {
     mainContent.addEventListener('click', async (e) => {
         const target = e.target;
 
+        if (target.classList.contains('edit-reader-btn')) {
+            const readerId = target.getAttribute('data-id');
+            try {
+                // Gọi API để lấy thông tin chi tiết của độc giả
+                const response = await fetch(`${API_BASE_URL}/reader/read_single.php?id=${readerId}`);
+                if (!response.ok) {
+                    throw new Error('Không tìm thấy thông tin độc giả.');
+                }
+                const readerData = await response.json();
+
+                // Điền thông tin vào form của độc giả
+                readerModalTitle.textContent = 'Sửa thông tin độc giả';
+                document.getElementById('reader_id').value = readerData.reader_id;
+                document.getElementById('name').value = readerData.name;
+                document.getElementById('student_id').value = readerData.student_id;
+                document.getElementById('contact_info').value = readerData.contact_info;
+
+                // Mở modal của độc giả
+                readerModal.style.display = 'block';
+
+            } catch (error) {
+                console.error('Lỗi khi lấy thông tin độc giả:', error);
+                alert(error.message);
+            }
+        }
+
         if (target.id === 'add-reader-btn') {
             readerModalTitle.textContent = 'Thêm độc giả mới';
             readerForm.reset();
@@ -349,22 +375,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(readerForm);
         const readerData = Object.fromEntries(formData.entries());
 
-        // Tạm thời chỉ làm chức năng Thêm
-        const url = `${API_BASE_URL}/reader/create.php`;
+        // --- THAY ĐỔI LOGIC Ở ĐÂY ---
+        // Kiểm tra xem có readerId không để quyết định là Thêm hay Sửa
+        const isUpdating = readerId !== '';
+        const url = isUpdating
+            ? `${API_BASE_URL}/reader/update.php`
+            : `${API_BASE_URL}/reader/create.php`;
+        // ----------------------------
 
         try {
             const response = await fetch(url, {
-                method: 'POST',
-                body: JSON.stringify(readerData)
+                method: 'POST', // Cả create và update đều dùng POST
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(readerData),
+                credentials: 'include' // Đảm bảo gửi session
             });
+
             const result = await response.json();
             alert(result.message);
+
             if (response.ok) {
                 readerModal.style.display = 'none';
-                loadReaders();
+                loadReaders(); // Tải lại danh sách
             }
         } catch (error) {
             alert('Lỗi khi lưu thông tin độc giả.');
+            console.error('Lỗi form độc giả:', error);
         }
     });
     // --- KHỞI CHẠY ---
