@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- LẤY THÔNG TIN NGƯỜI DÙNG VÀ KIỂM TRA QUYỀN ADMIN ---
+    const user = JSON.parse(localStorage.getItem('user'));
+    const isAdmin = user && user.role === 'admin';
+
+    if (!user) {
+        alert('Vui lòng đăng nhập để tiếp tục.');
+        window.location.href = 'login.html';
+        return;
+    }
+
     // --- KHAI BÁO BIẾN TOÀN CỤC ---
     const mainContent = document.getElementById('main-content');
     const navLinks = document.querySelectorAll('.nav-link');
@@ -18,19 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBorrowModalBtn = document.querySelector('.close-btn-borrow');
     const borrowForm = document.getElementById('borrow-form');
 
-    closeReaderModalBtn.onclick = () => readerModal.style.display = 'none';
-    closeBorrowModalBtn.onclick = () => borrowModal.style.display = 'none';
-
-
     const API_BASE_URL = '/quanlythuvien/backend';
 
-    // --- CÁC HÀM MỞ/ĐÓNG MODAL ---
-    function openModal() { bookModal.style.display = 'block'; }
-    function closeModal() { bookModal.style.display = 'none'; bookForm.reset(); }
-
     // --- CÁC HÀM TẢI DỮ LIỆU ---
-
-    // 1. Tải danh sách SÁCH
+    // (Bao gồm loadBooks, loadReaders, loadTransactions đã hoàn thiện)
     async function loadBooks() {
         try {
             const response = await fetch(`${API_BASE_URL}/read.php`);
@@ -76,8 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Lỗi fetch sách:', error);
         }
     }
-
-    // 2. Tải danh sách ĐỘC GIẢ (Đã hoàn thiện)
     async function loadReaders() {
         try {
             const response = await fetch(`${API_BASE_URL}/reader/read.php`);
@@ -122,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. Tải danh sách GIAO DỊCH (Đã hoàn thiện)
     async function loadTransactions() {
         try {
             const response = await fetch(`${API_BASE_URL}/transaction/read.php`);
@@ -185,49 +183,105 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    mainContent.addEventListener('change', async (e) => {
-        // Xử lý khi thay đổi dropdown trạng thái
-        if (e.target.classList.contains('status-select')) {
-            const transactionId = e.target.getAttribute('data-id');
-            const newStatus = e.target.value;
-
-            if (confirm(`Bạn có chắc chắn muốn đổi trạng thái của giao dịch ID ${transactionId} thành ${newStatus}?`)) {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/transaction/update.php`, {
-                        method: 'POST', // hoặc PUT
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            transaction_id: transactionId,
-                            new_status: newStatus
-                        })
-                    });
-
-                    const result = await response.json();
-                    alert(result.message);
-
-                    if (response.ok) {
-                        loadTransactions(); // Tải lại danh sách giao dịch
-                    }
-                } catch (error) {
-                    console.error('Lỗi khi cập nhật trạng thái:', error);
-                    alert('Đã xảy ra lỗi.');
-                }
-            } else {
-                // Nếu người dùng không đồng ý, trả dropdown về trạng thái cũ
-                loadTransactions();
-            }
-        }
-    });
-
-
     // --- CÁC BỘ LẮNG NGHE SỰ KIỆN (EVENT LISTENERS) ---
 
-    closeModalBtn.onclick = closeModal;
-    window.onclick = function (event) {
-        if (event.target == bookModal) { closeModal(); }
+    // Chỉ gắn listener cho các chức năng của admin
+    if (isAdmin) {
+        // Đóng modal Sách
+        closeModalBtn.onclick = () => { bookModal.style.display = 'none'; bookForm.reset(); };
+        // Đóng modal Độc giả
+        closeReaderModalBtn.onclick = () => { readerModal.style.display = 'none'; readerForm.reset(); };
+        // Đóng modal Mượn
+        closeBorrowModalBtn.onclick = () => { borrowModal.style.display = 'none'; borrowForm.reset(); };
+
+        // Xử lý submit form Sách
+        bookForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bookId = document.getElementById('book_id').value;
+            const formData = new FormData(bookForm);
+            const bookData = Object.fromEntries(formData.entries());
+
+            const isUpdating = bookId !== '';
+            const url = isUpdating ? `${API_BASE_URL}/book/update.php` : `${API_BASE_URL}/book/create.php`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bookData),
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (response.ok) {
+                    bookModal.style.display = 'none';
+                    loadBooks();
+                }
+            } catch (error) {
+                alert('Lỗi khi lưu sách.');
+            }
+        });
+
+        // Xử lý submit form Độc giả
+        readerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const readerId = document.getElementById('reader_id').value;
+            const formData = new FormData(readerForm);
+            const readerData = Object.fromEntries(formData.entries());
+
+            const isUpdating = readerId !== '';
+            const url = isUpdating ? `${API_BASE_URL}/reader/update.php` : `${API_BASE_URL}/reader/create.php`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(readerData),
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (response.ok) {
+                    readerModal.style.display = 'none';
+                    loadReaders();
+                }
+            } catch (error) {
+                alert('Lỗi khi lưu thông tin độc giả.');
+            }
+        });
+
+        // Xử lý submit form Mượn
+        borrowForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bookId = document.getElementById('book-select').value;
+            const readerId = document.getElementById('reader-select').value;
+            try {
+                const response = await fetch(`${API_BASE_URL}/transaction/borrow.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ book_id: bookId, reader_id: readerId }),
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (response.ok) {
+                    borrowModal.style.display = 'none';
+                    loadTransactions();
+                }
+            } catch (error) {
+                alert('Lỗi khi tạo phiếu mượn.');
+            }
+        });
     }
 
-    // Chuyển tab trên menu
+    // Đóng modal khi click ra ngoài (dành cho tất cả user)
+    window.onclick = function (event) {
+        if (event.target == bookModal || event.target == readerModal || event.target == borrowModal) {
+            event.target.style.display = 'none';
+        }
+    }
+
+    // Chuyển tab trên menu (dành cho tất cả user)
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -242,20 +296,119 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Đăng xuất
+    // Đăng xuất (dành cho tất cả user)
     logoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
+        localStorage.removeItem('user');
         alert('Đăng xuất thành công!');
         window.location.href = 'login.html';
     });
 
-    // === PHẦN CODE BỊ THIẾU TRƯỚC ĐÓ ===
-    // Xử lý các nút Thêm/Sửa/Xóa trong bảng
+    // Bộ lắng nghe sự kiện chính cho mainContent (click và change)
     mainContent.addEventListener('click', async (e) => {
+        if (!isAdmin) return; // Chỉ admin mới có thể click
         const target = e.target;
 
-        if (target.id === 'add-borrow-btn') {
-            // Mở modal và tải dữ liệu cho dropdowns
+        // Các nút của bảng Sách
+        if (target.id === 'add-book-btn') {
+            modalTitle.textContent = 'Thêm sách mới';
+            bookForm.reset();
+            document.getElementById('book_id').value = '';
+            openModal();
+        }
+        if (target.classList.contains('edit-btn')) {
+            const bookId = target.getAttribute('data-id');
+            try {
+                const response = await fetch(`${API_BASE_URL}/book/read_single.php?id=${bookId}`);
+                if (!response.ok) throw new Error('Không tìm thấy thông tin sách.');
+                const bookData = await response.json();
+
+                modalTitle.textContent = 'Sửa thông tin sách';
+                document.getElementById('book_id').value = bookData.book_id;
+                document.getElementById('title').value = bookData.title;
+                document.getElementById('author').value = bookData.author;
+                document.getElementById('publisher').value = bookData.publisher;
+                document.getElementById('publication_year').value = bookData.publication_year;
+                document.getElementById('quantity').value = bookData.quantity;
+
+                openModal();
+            } catch (error) {
+                console.error('Lỗi khi lấy thông tin sách:', error);
+                alert(error.message);
+            }
+        }
+        if (target.classList.contains('delete-btn')) {
+            const bookId = target.getAttribute('data-id');
+            if (confirm(`Bạn có chắc chắn muốn xóa sách có ID: ${bookId}?`)) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/book/delete.php`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ book_id: bookId })
+                    });
+                    const result = await response.json();
+                    alert(result.message);
+                    if (response.ok) {
+                        loadBooks();
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi xóa sách:', error);
+                    alert('Đã xảy ra lỗi khi cố gắng xóa sách.');
+                }
+            }
+        }
+
+        // Các nút của bảng Độc giả
+        if (target.id === 'add-reader-btn') {
+            readerModalTitle.textContent = 'Thêm độc giả mới';
+            readerForm.reset();
+            document.getElementById('reader_id').value = '';
+            readerModal.style.display = 'block';
+        }
+        if (target.classList.contains('edit-reader-btn')) {
+            const readerId = target.getAttribute('data-id');
+            try {
+                // Gọi API để lấy thông tin chi tiết của độc giả
+                const response = await fetch(`${API_BASE_URL}/reader/read_single.php?id=${readerId}`);
+                if (!response.ok) {
+                    throw new Error('Không tìm thấy thông tin độc giả.');
+                }
+                const readerData = await response.json();
+
+                // Điền thông tin vào form của độc giả
+                readerModalTitle.textContent = 'Sửa thông tin độc giả';
+                document.getElementById('reader_id').value = readerData.reader_id;
+                document.getElementById('name').value = readerData.name;
+                document.getElementById('student_id').value = readerData.student_id;
+                document.getElementById('contact_info').value = readerData.contact_info;
+
+                // Mở modal của độc giả
+                readerModal.style.display = 'block';
+
+            } catch (error) {
+                console.error('Lỗi khi lấy thông tin độc giả:', error);
+                alert(error.message);
+            }
+        }
+        if (target.classList.contains('delete-reader-btn')) {
+            const readerId = target.getAttribute('data-id');
+            if (confirm(`Bạn có chắc muốn xóa độc giả có ID: ${readerId}?`)) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/reader/delete.php`, {
+                        method: 'POST',
+                        body: JSON.stringify({ reader_id: readerId })
+                    });
+                    const result = await response.json();
+                    alert(result.message);
+                    if (response.ok) loadReaders();
+                } catch (error) {
+                    alert('Lỗi khi xóa độc giả.');
+                }
+            }
+        }
+
+        // Nút của bảng Giao dịch
+        if (target.id === 'add-borrow-btn') { // Mở modal và tải dữ liệu cho dropdowns
             borrowModal.style.display = 'block';
 
             // Tải danh sách sách
@@ -282,203 +435,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
+    });
 
-        if (target.classList.contains('edit-reader-btn')) {
-            const readerId = target.getAttribute('data-id');
-            try {
-                // Gọi API để lấy thông tin chi tiết của độc giả
-                const response = await fetch(`${API_BASE_URL}/reader/read_single.php?id=${readerId}`);
-                if (!response.ok) {
-                    throw new Error('Không tìm thấy thông tin độc giả.');
-                }
-                const readerData = await response.json();
+    mainContent.addEventListener('change', async (e) => {
+        if (!isAdmin) return; // Chỉ admin mới có thể thay đổi
+        if (e.target.classList.contains('status-select')) {
+            const transactionId = e.target.getAttribute('data-id');
+            const newStatus = e.target.value;
 
-                // Điền thông tin vào form của độc giả
-                readerModalTitle.textContent = 'Sửa thông tin độc giả';
-                document.getElementById('reader_id').value = readerData.reader_id;
-                document.getElementById('name').value = readerData.name;
-                document.getElementById('student_id').value = readerData.student_id;
-                document.getElementById('contact_info').value = readerData.contact_info;
-
-                // Mở modal của độc giả
-                readerModal.style.display = 'block';
-
-            } catch (error) {
-                console.error('Lỗi khi lấy thông tin độc giả:', error);
-                alert(error.message);
-            }
-        }
-
-        if (target.id === 'add-reader-btn') {
-            readerModalTitle.textContent = 'Thêm độc giả mới';
-            readerForm.reset();
-            document.getElementById('reader_id').value = '';
-            readerModal.style.display = 'block';
-        }
-
-        if (target.classList.contains('delete-reader-btn')) {
-            const readerId = target.getAttribute('data-id');
-            if (confirm(`Bạn có chắc muốn xóa độc giả có ID: ${readerId}?`)) {
+            if (confirm(`Bạn có chắc chắn muốn đổi trạng thái của giao dịch ID ${transactionId} thành ${newStatus}?`)) {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/reader/delete.php`, {
-                        method: 'POST',
-                        body: JSON.stringify({ reader_id: readerId })
-                    });
-                    const result = await response.json();
-                    alert(result.message);
-                    if (response.ok) loadReaders();
-                } catch (error) {
-                    alert('Lỗi khi xóa độc giả.');
-                }
-            }
-        }
-
-        // Nhấn nút THÊM
-        if (target.id === 'add-book-btn') {
-            modalTitle.textContent = 'Thêm sách mới';
-            bookForm.reset();
-            document.getElementById('book_id').value = '';
-            openModal();
-        }
-
-        // Nhấn nút SỬA
-        if (target.classList.contains('edit-btn')) {
-            const bookId = target.getAttribute('data-id');
-            try {
-                const response = await fetch(`${API_BASE_URL}/book/read_single.php?id=${bookId}`);
-                if (!response.ok) throw new Error('Không tìm thấy thông tin sách.');
-                const bookData = await response.json();
-
-                modalTitle.textContent = 'Sửa thông tin sách';
-                document.getElementById('book_id').value = bookData.book_id;
-                document.getElementById('title').value = bookData.title;
-                document.getElementById('author').value = bookData.author;
-                document.getElementById('publisher').value = bookData.publisher;
-                document.getElementById('publication_year').value = bookData.publication_year;
-                document.getElementById('quantity').value = bookData.quantity;
-
-                openModal();
-            } catch (error) {
-                console.error('Lỗi khi lấy thông tin sách:', error);
-                alert(error.message);
-            }
-        }
-
-        // Nhấn nút XÓA
-        if (target.classList.contains('delete-btn')) {
-            const bookId = target.getAttribute('data-id');
-            if (confirm(`Bạn có chắc chắn muốn xóa sách có ID: ${bookId}?`)) {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/book/delete.php`, {
+                    const response = await fetch(`${API_BASE_URL}/transaction/update.php`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ book_id: bookId })
+                        body: JSON.stringify({
+                            transaction_id: transactionId,
+                            new_status: newStatus
+                        }),
+                        credentials: 'include' // Đảm bảo gửi session
                     });
+
                     const result = await response.json();
-                    alert(result.message);
-                    if (response.ok) {
-                        loadBooks();
-                    }
+                    alert(result.message); // Hiển thị thông báo (thành công hoặc thất bại)
+
+                    // --- SỬA LỖI Ở ĐÂY ---
+                    // Bất kể API trả về thành công (response.ok) hay thất bại,
+                    // chúng ta đều tải lại danh sách để đảm bảo giao diện luôn đúng.
+                    loadTransactions();
+                    // --- KẾT THÚC SỬA LỖI ---
+
                 } catch (error) {
-                    console.error('Lỗi khi xóa sách:', error);
-                    alert('Đã xảy ra lỗi khi cố gắng xóa sách.');
+                    console.error('Lỗi khi cập nhật trạng thái:', error);
+                    alert('Đã xảy ra lỗi kết nối.');
+                    loadTransactions(); // Cũng tải lại nếu có lỗi mạng
                 }
+            } else {
+                // Nếu người dùng không đồng ý, trả dropdown về trạng thái cũ
+                loadTransactions();
             }
         }
     });
 
-    // Xử lý submit form
-    bookForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const bookId = document.getElementById('book_id').value;
-
-        const formData = new FormData(bookForm);
-        const bookData = Object.fromEntries(formData.entries());
-
-        const isUpdating = bookId !== '';
-        const url = isUpdating ? `${API_BASE_URL}/book/update.php` : `${API_BASE_URL}/book/create.php`;
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(bookData)
-            });
-
-            const result = await response.json();
-            alert(result.message);
-
-            if (response.ok) {
-                closeModal();
-                loadBooks();
-            }
-        } catch (error) {
-            console.error('Lỗi khi lưu sách:', error);
-            alert('Đã có lỗi xảy ra.');
+    // --- KHỞI TẠO GIAO DIỆN DỰA TRÊN VAI TRÒ ---
+    function initializeUI() {
+        if (!isAdmin) {
+            document.querySelector('a[data-content="readers"]').style.display = 'none';
         }
-    });
-    // Thêm vào cuối file js/dashboard.js
-    readerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const readerId = document.getElementById('reader_id').value;
-        const formData = new FormData(readerForm);
-        const readerData = Object.fromEntries(formData.entries());
+        loadBooks();
+    }
 
-        // --- THAY ĐỔI LOGIC Ở ĐÂY ---
-        // Kiểm tra xem có readerId không để quyết định là Thêm hay Sửa
-        const isUpdating = readerId !== '';
-        const url = isUpdating
-            ? `${API_BASE_URL}/reader/update.php`
-            : `${API_BASE_URL}/reader/create.php`;
-        // ----------------------------
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST', // Cả create và update đều dùng POST
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(readerData),
-                credentials: 'include' // Đảm bảo gửi session
-            });
-
-            const result = await response.json();
-            alert(result.message);
-
-            if (response.ok) {
-                readerModal.style.display = 'none';
-                loadReaders(); // Tải lại danh sách
-            }
-        } catch (error) {
-            alert('Lỗi khi lưu thông tin độc giả.');
-            console.error('Lỗi form độc giả:', error);
-        }
-    });
-
-    borrowForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const bookId = document.getElementById('book-select').value;
-        const readerId = document.getElementById('reader-select').value;
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/transaction/borrow.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ book_id: bookId, reader_id: readerId }),
-                credentials: 'include'
-            });
-
-            const result = await response.json();
-            alert(result.message);
-
-            if (response.ok) {
-                borrowModal.style.display = 'none';
-                loadTransactions(); // Tải lại danh sách giao dịch
-            }
-        } catch (error) {
-            alert('Lỗi khi tạo phiếu mượn.');
-            console.error('Lỗi form mượn sách:', error);
-        }
-    });
-
-    // --- KHỞI CHẠY ---
-    loadBooks();
+    initializeUI();
 });
+

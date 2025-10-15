@@ -12,41 +12,45 @@ document.addEventListener("DOMContentLoaded", () => {
       errorMsg.textContent = "";
 
       if (!username || !password) {
-        errorMsg.textContent = "Vui lòng điền đầy đủ tên đăng nhập và mật khẩu.";
+        errorMsg.textContent = "Vui lòng điền đầy đủ thông tin.";
         return;
       }
 
       try {
-        // Đảm bảo đường dẫn này chính xác (đã đổi api -> backend)
         const apiUrl = "/quanlythuvien/backend/user/login.php";
 
         const response = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, password }),
+          credentials: 'include' // Quan trọng để quản lý session
         });
 
         const result = await response.json();
 
         if (response.ok) {
-          alert(result.message);
+          // --- BƯỚC QUAN TRỌNG NHẤT NẰM Ở ĐÂY ---
+          // Đảm bảo rằng login.php trả về một đối tượng "user"
+          if (result.user) {
+            // Lưu thông tin người dùng vào localStorage
+            localStorage.setItem('user', JSON.stringify(result.user));
 
-          // --- THAY ĐỔI Ở ĐÂY ---
-          // Kiểm tra vai trò của người dùng trả về từ API
-          if (result.user && result.user.role === 'admin') {
-            // Nếu là admin, chuyển đến trang dashboard đầy đủ chức năng
-            window.location.href = "dashboard.html";
+            // Chuyển hướng dựa trên vai trò
+            if (result.user.role === 'admin') {
+              window.location.href = "dashboard.html";
+            } else {
+              window.location.href = "user_dashboard.html";
+            }
           } else {
-            // Nếu là độc giả, chuyển đến trang dashboard của người dùng
-            window.location.href = "user_dashboard.html";
+            errorMsg.textContent = "Lỗi: Dữ liệu người dùng không được trả về từ server.";
           }
         } else {
-          errorMsg.textContent = result.message || "Đã xảy ra lỗi. Vui lòng thử lại.";
+          errorMsg.textContent = result.message || "Đăng nhập thất bại!";
         }
 
       } catch (error) {
-        console.error("Login error:", error);
-        errorMsg.textContent = "Lỗi kết nối hoặc URL API không đúng.";
+        console.error("Lỗi đăng nhập:", error);
+        errorMsg.textContent = "Không thể kết nối đến máy chủ!";
       }
     });
   }

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang cá nhân - Quản lý thư viện</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .status-borrowed {
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .status-returned {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-overdue {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        header {
+            background: #007bff;
+            color: white;
+            text-align: center;
+            padding: 15px;
+        }
+
+        nav {
+            background: #343a40;
+            color: white;
+            padding: 10px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        nav a.active,
+        nav a:hover {
+            background-color: #495057;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #007bff;
+            color: white;
+        }
+
+        #logoutBtn {
+            color: white;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            margin-left: auto;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1em;
+        }
+
+        #logoutBtn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>📚 Hệ thống Quản lý Thư viện</h1>
+    </header>
+
+    <nav>
+        <a href="#" class="nav-link active" data-content="books">Danh sách sách</a>
+        <a href="#" class="nav-link" data-content="history">Lịch sử mượn</a>
+        <a href="#" id="logoutBtn">Đăng xuất</a>
+    </nav>
+
+    <main id="main-content">
+        <!-- Nội dung sẽ được JavaScript chèn vào đây -->
+    </main>
+
+    <!-- QUAN TRỌNG: Liên kết đến file JavaScript dành riêng cho người dùng -->
+    <script src="js/user_dashboard.js"></script>
+
+</body>
+
+</html>

@@ -1,6 +1,5 @@
 <?php
 session_start();
-$start_time = microtime(true); // Bắt đầu đo thời gian
 
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
@@ -11,7 +10,6 @@ include_once '../../config/db_connect.php';
 
 $database = new Database();
 $db = $database->getConnection();
-$connection_time = microtime(true); // Mốc thời gian sau khi kết nối CSDL
 
 $data = json_decode(file_get_contents("php://input"));
 
@@ -29,41 +27,35 @@ try {
     $stmt = $db->prepare($query);
     $stmt->bindParam(':username', $username);
     $stmt->execute();
-    $query_time = microtime(true); // Mốc thời gian sau khi truy vấn
 
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $time_to_connect = round($connection_time - $start_time, 4);
-    $time_to_query = round($query_time - $connection_time, 4);
-    $time_to_verify = 0; // Khởi tạo
-
-    if ($user) {
-        $verify_start = microtime(true);
-        $password_match = password_verify($password, $user['password']);
-        $verify_end = microtime(true); // Mốc thời gian sau khi xác thực mk
-        $time_to_verify = round($verify_end - $verify_start, 4);
-    } else {
-        $password_match = false;
-    }
-
-    if ($password_match) {
+    if ($user && password_verify($password, $user['password'])) {
+        // Mật khẩu chính xác, đăng nhập thành công
         $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['username'] = $user['username'];
         $_SESSION['role'] = $user['role'];
         session_write_close();
 
         http_response_code(200);
+        // --- DÒNG QUAN TRỌNG NHẤT LÀ ĐÂY ---
+        // Đảm bảo trả về đối tượng "user" chứa username và role
         echo json_encode([
             "success" => true,
             "message" => "Đăng nhập thành công!",
-            "debug_times" => ["connect" => $time_to_connect, "query" => $time_to_query, "verify" => $time_to_verify]
+            "user" => [
+                "username" => $user['username'],
+                "role" => $user['role']
+            ]
         ]);
+        // ------------------------------------
+
     } else {
+        // Sai thông tin đăng nhập
         http_response_code(401);
         echo json_encode([
             "success" => false,
-            "message" => "Tên đăng nhập hoặc mật khẩu không chính xác.",
-            "debug_times" => ["connect" => $time_to_connect, "query" => $time_to_query, "verify" => $time_to_verify]
+            "message" => "Tên đăng nhập hoặc mật khẩu không chính xác."
         ]);
     }
 } catch (PDOException $e) {
